@@ -1,0 +1,116 @@
+pip install pygame
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Wrestling Game")
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+
+# Game clock
+clock = pygame.time.Clock()
+
+# Wrestler settings
+WRESTLER_WIDTH, WRESTLER_HEIGHT = 50, 100
+WRESTLER_SPEED = 5
+PUNCH_DAMAGE = 10
+
+# Fonts
+font = pygame.font.SysFont(None, 55)
+
+# Wrestler class
+class Wrestler:
+    def __init__(self, x, y, color):
+        self.rect = pygame.Rect(x, y, WRESTLER_WIDTH, WRESTLER_HEIGHT)
+        self.color = color
+        self.health = 100
+        self.punching = False
+
+    def draw(self):
+        pygame.draw.rect(screen, self.color, self.rect)
+
+    def move(self, dx, dy):
+        self.rect.x += dx * WRESTLER_SPEED
+        self.rect.y += dy * WRESTLER_SPEED
+        # Keep within bounds
+        self.rect.x = max(0, min(WIDTH - WRESTLER_WIDTH, self.rect.x))
+        self.rect.y = max(0, min(HEIGHT - WRESTLER_HEIGHT, self.rect.y))
+
+    def punch(self, opponent):
+        if self.rect.colliderect(opponent.rect):
+            opponent.health -= PUNCH_DAMAGE
+            self.punching = True
+        else:
+            self.punching = False
+
+# Function to display health bars
+def draw_health_bar(wrestler, x, y):
+    if wrestler.health < 0:
+        wrestler.health = 0
+    health_bar_length = 200 * (wrestler.health / 100)
+    pygame.draw.rect(screen, RED, [x, y, health_bar_length, 20])
+
+# Main game loop
+def game_loop():
+    wrestler1 = Wrestler(100, HEIGHT//2 - WRESTLER_HEIGHT//2, BLUE)
+    wrestler2 = Wrestler(WIDTH - 150, HEIGHT//2 - WRESTLER_HEIGHT//2, RED)
+
+    running = True
+    while running:
+        screen.fill(WHITE)
+
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        # Wrestler movement (WASD for wrestler1, arrow keys for wrestler2)
+        keys = pygame.key.get_pressed()
+
+        # Wrestler 1 controls
+        if keys[pygame.K_a]: wrestler1.move(-1, 0)  # Move left
+        if keys[pygame.K_d]: wrestler1.move(1, 0)   # Move right
+        if keys[pygame.K_w]: wrestler1.move(0, -1)  # Move up
+        if keys[pygame.K_s]: wrestler1.move(0, 1)   # Move down
+
+        # Wrestler 2 controls
+        if keys[pygame.K_LEFT]: wrestler2.move(-1, 0)  # Move left
+        if keys[pygame.K_RIGHT]: wrestler2.move(1, 0)  # Move right
+        if keys[pygame.K_UP]: wrestler2.move(0, -1)    # Move up
+        if keys[pygame.K_DOWN]: wrestler2.move(0, 1)   # Move down
+
+        # Punch (space for wrestler1, enter for wrestler2)
+        if keys[pygame.K_SPACE]: wrestler1.punch(wrestler2)
+        if keys[pygame.K_RETURN]: wrestler2.punch(wrestler1)
+
+        # Draw wrestlers and health bars
+        wrestler1.draw()
+        wrestler2.draw()
+        draw_health_bar(wrestler1, 50, 50)
+        draw_health_bar(wrestler2, WIDTH - 250, 50)
+
+        # Check for winner
+        if wrestler1.health <= 0 or wrestler2.health <= 0:
+            winner_text = font.render("Wrestler 1 Wins!" if wrestler2.health <= 0 else "Wrestler 2 Wins!", True, BLACK)
+            screen.blit(winner_text, (WIDTH // 2 - winner_text.get_width() // 2, HEIGHT // 2 - winner_text.get_height() // 2))
+            pygame.display.update()
+            pygame.time.wait(3000)
+            running = False
+
+        # Update display
+        pygame.display.update()
+        clock.tick(60)
+
+    pygame.quit()
+
+# Start the game
+game_loop()
